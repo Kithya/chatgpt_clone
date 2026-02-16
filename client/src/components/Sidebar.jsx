@@ -41,7 +41,7 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
 
       {/* Search */}
 
-      <div className="flex items-center gap-2 p-3 mt-3 border border-gray-400 dark:border-white/20 rounded-md">
+      <div className="flex items-center gap-2 p-3 mt-3 border border-gray-400 dark:border-white/40 rounded-md">
         <img src={assets.search_icon} className="w-4 not-dark:invert" />
         <input
           type="text"
