@@ -29,7 +29,10 @@ export const stripeWebhooks = async (request, response) => {
             payment_intent: paymentIntent.id,
           });
 
-          const session = sessionList[0];
+          const session = sessionList.data[0];
+
+          if (!session) return response.json({ received: true });
+
           const { transactionId, appId } = session.metadata;
 
           if (appId === "ChatGPT_clone") {
@@ -37,6 +40,7 @@ export const stripeWebhooks = async (request, response) => {
               _id: transactionId,
               isPaid: false,
             });
+            if (!transaction) return response.json({ received: true });
 
             // update credit in user account
             await User.updateOne(
