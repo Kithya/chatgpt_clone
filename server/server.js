@@ -10,16 +10,16 @@ import { stripeWebhooks } from "./controllers/webhook.js";
 
 const app = express();
 
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhooks,
+);
+
 app.use(express.json());
 app.use(cors());
 
 await connectDB();
-
-app.post(
-  "/api/stripe",
-  express.raw({ type: "application/json" }),
-  stripeWebhooks,
-);
 
 app.get("/", (req, res) => {
   res.send("Hello from the server!");
