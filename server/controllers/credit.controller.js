@@ -1,4 +1,5 @@
-import Transaction from "../models/Transaction";
+import Transaction from "../models/Transaction.js";
+import Stripe from "stripe";
 
 const plans = [
   {
@@ -50,6 +51,9 @@ export const getPlans = async (req, res) => {
   }
 };
 
+// create stripe instance
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 // API controller for purchasing a plan
 export const purchasePlan = async (req, res) => {
   try {
@@ -64,16 +68,38 @@ export const purchasePlan = async (req, res) => {
 
     // create new transaction
     const transaction = await Transaction.create({
-        userId: userId,
-        planId: plan._id,
-        amount: plan.price,
-        credits: plan.credits,
-        isPaid: false,
-    })
+      userId: userId,
+      planId: plan._id,
+      amount: plan.price,
+      credits: plan.credits,
+      isPaid: false,
+    });
 
-     
+    const { origin } = req.headers;
+    const session = await stripe.checkout.sessions.create({
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: plan.name,
+            },
+            unit_amount: plan.price * 100,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${origin}/loading`,
+      cancel_url: `${origin}`,
+      metadata: {
+        transactionId: transaction._id.toString(),
+        appId: "ChatGPT_clone",
+      },
+      expires_at: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour
+    });
 
-    return res.json({ success: true, transaction });
+    return res.json({ success: true, url: session.url });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
