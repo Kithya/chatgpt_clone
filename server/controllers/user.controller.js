@@ -71,22 +71,58 @@ export const getUser = async (req, res) => {
 };
 
 // API to get published images
-
 export const getPublishedImages = async (req, res) => {
   try {
-    const publishedImagesMessasges = await Chat.aggregate([
+    const publishedImagesMessages = await Chat.aggregate([
       { $unwind: "$messages" },
-      { $match: { "messages.isImage": true, "messages.isPublished": true } },
+      {
+        $match: {
+          "messages.isImage": true,
+          "messages.isPublished": true,
+          "messages.role": "assistant",
+        },
+      },
+      { $sort: { "messages.timestamp": -1 } },
       {
         $project: {
           _id: 0,
           imageUrl: "$messages.content",
           userName: "$userName",
+          timestamp: "$messages.timestamp",
         },
       },
     ]);
 
-    res.json({ success: true, image: publishedImagesMessasges.reverse() });
+    res.json({ success: true, image: publishedImagesMessages });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// API to get published text generations
+export const getPublishedTexts = async (req, res) => {
+  try {
+    const publishedTextMessages = await Chat.aggregate([
+      { $unwind: "$messages" },
+      {
+        $match: {
+          "messages.isImage": false,
+          "messages.isPublished": true,
+          "messages.role": "assistant",
+        },
+      },
+      { $sort: { "messages.timestamp": -1 } },
+      {
+        $project: {
+          _id: 0,
+          text: "$messages.content",
+          userName: "$userName",
+          timestamp: "$messages.timestamp",
+        },
+      },
+    ]);
+
+    res.json({ success: true, text: publishedTextMessages });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

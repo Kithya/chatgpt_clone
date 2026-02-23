@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import { useAppContext } from "../context/AppContext";
+import toast from "react-hot-toast";
 
 const Login = () => {
   const [state, setState] = React.useState("login");
+  const { axios, setToken } = useAppContext();
 
   const [formData, setFormData] = React.useState({
     name: "",
@@ -11,6 +14,20 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const url = state === "login" ? "/api/user/login" : "/api/user/register";
+
+    try {
+      const { data } = await axios.post(url, formData);
+      if (data.success) {
+        setToken(data.token);
+        localStorage.setItem("token", data.token);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.response.data.message);
+    }
   };
 
   const handleChange = (e) => {

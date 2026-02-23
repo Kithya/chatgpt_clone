@@ -1,11 +1,53 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import { assets } from "../assets/assets";
+import toast from "react-hot-toast";
 
 const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
-  const { chats, setSelectedChat, theme, setTheme, user, navigate } =
-    useAppContext();
+  const {
+    chats,
+    setSelectedChat,
+    theme,
+    setTheme,
+    user,
+    navigate,
+    createNewChat,
+    axios,
+    setChats,
+    fecthUserChats,
+    setToken,
+    token,
+  } = useAppContext();
   const [search, setSearch] = useState("");
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setToken(null);
+    toast.success("Logged out successfully");
+  };
+
+  const deleteChat = async (e, chatId) => {
+    e.stopPropagation();
+    const confirm = window.confirm(
+      "Are you sure you want to delete this chat?",
+    );
+    if (confirm) {
+      try {
+        const { data } = await axios.post(
+          "/api/chat/delete",
+          { chatId },
+          { headers: { Authorization: token } },
+        );
+
+        if (data.success) {
+          setChats((prev) => prev.filter((chat) => chat._id !== chatId));
+        }
+        await fecthUserChats();
+      } catch (error) {
+        toast.error(error.response.data.message);
+      }
+    }
+  };
 
   return (
     <div
@@ -18,7 +60,10 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
       />
 
       {/* New Chat button */}
-      <button className="flex justify-start items-center w-full py-2 px-2 mt-10 dark:text-white hover:bg-black/5 rounded-lg group dark:hover:bg-white/10 transition-colors duration-300 ease-in-out cursor-pointer">
+      <button
+        onClick={createNewChat}
+        className="flex justify-start items-center w-full py-2 px-2 mt-10 dark:text-white hover:bg-black/5 rounded-lg group dark:hover:bg-white/10 transition-colors duration-300 ease-in-out cursor-pointer"
+      >
         <span className="mr-2 -ml-0.5 text-xl">
           <img src={assets.edit_square} className="w-5 not-dark:invert" />
         </span>
@@ -35,7 +80,7 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
       >
         <img src={assets.gallery_icon} className="w-4.5 not-dark:invert" />
         <div>
-          <p>Image</p>
+          <p>Community</p>
         </div>
       </div>
 
@@ -46,7 +91,7 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
         <input
           type="text"
           placeholder="Search Chats.."
-          className="text-xs placeholder:text-gray-400 outline-none"
+          className="text-sm placeholder:text-gray-400 outline-none"
           onChange={(e) => setSearch(e.target.value)}
           value={search}
         />
@@ -85,6 +130,12 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
               <img
                 src={assets.bin_icon}
                 className="hidden group-hover:block w-4 cursor-pointer not-dark:invert"
+                onClick={(e) =>
+                  toast.promise(deleteChat(e, chat._id), {
+                    success: "Chat deleted successfully",
+                    error: "Failed to delete chat",
+                  })
+                }
               />
             </div>
           ))}
@@ -132,7 +183,7 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
           <div className="border-t border-gray-300/50 dark:border-white/10 my-1" />
 
           {/* User */}
-          <div className="flex items-center gap-2 py-2 px-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
+          <div className="group flex items-center gap-2 py-2 px-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
             <img src={assets.user_icon} className="w-7 not-dark:invert" />
             <p className="flex-1 text-sm dark:text-primary truncate">
               {user ? user.name : "Guest"}
@@ -141,6 +192,7 @@ const Sidebar = ({ isMenuOpen, setIsMenuOpen }) => {
               <img
                 src={assets.logout_icon}
                 className="h-5 hidden group-hover:block not-dark:invert"
+                onClick={logout}
               />
             )}
           </div>
